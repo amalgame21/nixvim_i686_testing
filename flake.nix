@@ -2,9 +2,14 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.follows = "nixvim/nixpkgs";
-    nixvim.url = "github:nix-community/nixvim";
-    nixvim.inputs.systems.follows = "i686-linux";
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        systems.follows = "i686-linux";
+      };
+    };
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     i686-linux = {
       url = "path:./i686-linux.nix";
       flake = false;
@@ -12,7 +17,11 @@
   };
 
   outputs =
-    { nixpkgs, nixvim, ... }:
+    {
+      nixpkgs,
+      nixvim,
+      ...
+    }:
     let
       config = {
         colorschemes.gruvbox.enable = true;
@@ -23,17 +32,30 @@
       ];
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
+
     in
     {
       packages = forAllSystems (
         system:
         let
+          nixpkgs-patched = (import nixpkgs { inherit system; }).applyPatches {
+            name = "disabledTestPaths";
+            src = nixpkgs;
+            patches = [ ./disabledTestPaths.patch ];
+          };
+
+          pkgs = import nixpkgs-patched { inherit system; };
+
           nixvim' = nixvim.legacyPackages.${system};
-          nvim = nixvim'.makeNixvim config;
+          nvim = nixvim'.makeNixvimWithModule {
+            inherit pkgs;
+            module = config;
+          };
         in
         {
           inherit nvim;
           default = nvim;
+          pr = pkgs.python313Packages.pytest-regressions;
         }
       );
     };
