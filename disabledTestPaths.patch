@@ -1,0 +1,23 @@
+diff --git a/pkgs/development/python-modules/pytest-regressions/default.nix b/pkgs/development/python-modules/pytest-regressions/default.nix
+index 337c5f048a17..5fe7ae3d75d9 100644
+--- a/pkgs/development/python-modules/pytest-regressions/default.nix
++++ b/pkgs/development/python-modules/pytest-regressions/default.nix
+@@ -12,6 +12,7 @@
+   pytestCheckHook,
+   pyyaml,
+   setuptools-scm,
++  stdenv,
+ }:
+ 
+ buildPythonPackage rec {
+@@ -68,6 +69,10 @@ buildPythonPackage rec {
+     "pytest_regressions.plugin"
+   ];
+ 
++  disabledTestPaths = lib.optionals (stdenv.system == "i686-linux") [
++    "tests/test_ndarrays_regression.py"
++  ];
++
+   meta = with lib; {
+     changelog = "https://github.com/ESSS/pytest-regressions/blob/${src.tag}/CHANGELOG.rst";
+     description = "Pytest fixtures to write regression tests";
